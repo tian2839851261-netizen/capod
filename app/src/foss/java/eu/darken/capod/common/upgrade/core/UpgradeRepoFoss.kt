@@ -47,7 +47,7 @@ class UpgradeRepoFoss @Inject constructor(
             fossCache.upgrade.flow
                 .map { data ->
                     if (data == null) {
-                        Info()
+                        Info(isPro = true)
                     } else {
                         Info(
                             isPro = true,
