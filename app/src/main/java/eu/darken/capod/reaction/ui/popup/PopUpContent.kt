@@ -39,7 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import eu.darken.capod.monitor.core.PodDevice
 import eu.darken.capod.pods.core.apple.PodModel
+import eu.darken.capod.pods.core.apple.ble.batteryProgress
 import eu.darken.capod.pods.core.apple.ble.formatBatteryPercent
+import eu.darken.capod.pods.core.apple.ble.isKnownBattery
 
 // iOS-style connection popup: dimmed full-screen backdrop, big product images,
 // battery gauges underneath. A tap anywhere (backdrop or card) dismisses it.
@@ -208,15 +210,17 @@ private fun PodVisual(
 
 /**
  * Little iOS-style battery gauge: outline + proportional fill.
+ * Battery values in this app are fractions (0f..1f), not 0-100.
  * Fill is green while charging, orange when low-ish, red when critical, grey otherwise.
  */
 @Composable
 private fun BatteryGauge(percent: Float, isCharging: Boolean) {
-    val fraction = (percent.coerceIn(0f, 100f)) / 100f
+    val fraction = batteryProgress(percent)
     val fillColor = when {
+        !isKnownBattery(percent) -> Color(0xFF8E8E93)
         isCharging -> Color(0xFF34C759)
-        percent <= 20f -> Color(0xFFFF3B30)
-        percent <= 60f -> Color(0xFFFF9500)
+        percent <= 0.20f -> Color(0xFFFF3B30)
+        percent <= 0.60f -> Color(0xFFFF9500)
         else -> Color(0xFF8E8E93)
     }
 
