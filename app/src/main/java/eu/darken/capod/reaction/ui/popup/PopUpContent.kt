@@ -37,17 +37,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import eu.darken.capod.common.compose.Preview2
-import eu.darken.capod.common.compose.PreviewWrapper
-import eu.darken.capod.common.compose.preview.MockPodDataProvider
 import eu.darken.capod.monitor.core.PodDevice
 import eu.darken.capod.pods.core.apple.PodModel
 import eu.darken.capod.pods.core.apple.ble.formatBatteryPercent
 
-/**
- * iOS-style connection popup: dimmed full-screen backdrop, big product images,
- * battery gauges underneath. A tap anywhere (backdrop or card) dismisses it.
- */
+// iOS-style connection popup: dimmed full-screen backdrop, big product images,
+// battery gauges underneath. A tap anywhere (backdrop or card) dismisses it.
 @Composable
 fun PopUpContent(
     device: PodDevice,
@@ -197,4 +192,54 @@ private fun PodVisual(
                 Box(
                     modifier = Modifier
                         .size(width = 18.dp, height = 13.dp)
-                        .border(1.5.dp, Color(0xFF1C1C1E), RoundedCornerSh
+                        .border(1.5.dp, Color(0xFF1C1C1E), RoundedCornerShape(4.dp)),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Text(
+                text = formatBatteryPercent(context, batteryPercent),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/**
+ * Little iOS-style battery gauge: outline + proportional fill.
+ * Fill is green while charging, orange when low-ish, red when critical, grey otherwise.
+ */
+@Composable
+private fun BatteryGauge(percent: Float, isCharging: Boolean) {
+    val fraction = (percent.coerceIn(0f, 100f)) / 100f
+    val fillColor = when {
+        isCharging -> Color(0xFF34C759)
+        percent <= 20f -> Color(0xFFFF3B30)
+        percent <= 60f -> Color(0xFFFF9500)
+        else -> Color(0xFF8E8E93)
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(width = 30.dp, height = 16.dp)
+                .border(1.5.dp, Color(0x59000000), RoundedCornerShape(5.dp))
+                .padding(2.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(fraction)
+                    .clip(RoundedCornerShape(2.5.dp))
+                    .background(fillColor),
+            )
+        }
+        Spacer(modifier = Modifier.width(1.5.dp))
+        Box(
+            modifier = Modifier
+                .size(width = 2.5.dp, height = 6.dp)
+                .background(Color(0x59000000), RoundedCornerShape(2.dp)),
+        )
+    }
+}
