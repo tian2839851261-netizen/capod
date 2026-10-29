@@ -22,26 +22,30 @@ jobs:
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Build foss release APK (minified)
+      - name: Generate temporary signing key
+        run: |
+          keytool -genkeypair -keystore ${{ runner.temp }}/capod.keystore -storepass android -keypass android \
+            -alias capod -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=CAPod, O=Personal, C=CN"
+
+      - name: Build foss release APK (minified, signed)
+        env:
+          STORE_PATH: ${{ runner.temp }}/capod.keystore
+          STORE_PASSWORD: android
+          KEY_ALIAS: capod
+          KEY_PASSWORD: android
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleFossRelease --no-daemon
 
-      - name: Sign release APK
+      - name: Verify APK
         run: |
-          UNSIGNED=$(ls app/build/outputs/apk/foss/release/*-unsigned.apk | head -n 1)
-          echo "Unsigned APK: $UNSIGNED"
-          keytool -genkeypair -keystore /tmp/signing.keystore -storepass android -keypass android \
-            -alias capod -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=CAPod, O=Personal, C=CN"
-          BT=$ANDROID_HOME/build-tools/36.0.0
-          $BT/zipalign -p -f 4 "$UNSIGNED" /tmp/aligned.apk
-          $BT/apksigner sign --ks /tmp/signing.keystore --ks-pass pass:android --key-pass pass:android \
-            --out /tmp/capod-foss-release.apk /tmp/aligned.apk
-          $BT/apksigner verify --print-certs /tmp/capod-foss-release.apk
-          ls -lh /tmp/capod-foss-release.apk
+          APK=$(ls app/build/outputs/apk/foss/release/*.apk | head -n 1)
+          echo "Built APK: $APK"
+          ls -lh "$APK"
+          $ANDROID_HOME/build-tools/36.0.0/apksigner verify --print-certs "$APK"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: capod-foss-release-apk
-          path: /tmp/capod-foss-release.apk
+          path: app/build/outputs/apk/foss/release/*.apk
